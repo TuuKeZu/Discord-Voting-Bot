@@ -1,0 +1,19 @@
+{
+  "name": "discord-voting-bot",
+  "version": "1.0.0",
+  "description": "Voting bot for discord",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TuuKeZu/Discord-Voting-Bot.git"
+  },
+  "author": "TuuKeZu & Karim",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TuuKeZu/Discord-Voting-Bot/issues"
+  },
+  "homepage": "https://github.com/TuuKeZu/Discord-Voting-Bot#readme"
+}
