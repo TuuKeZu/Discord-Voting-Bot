@@ -1,3 +1,12 @@
 {
-    "token": ""
+    "token": "ODcxNDcyMjk1OTYzNjU2MjUz.YQbz0g.i4V4LWFWtjsXPGKB-wtd-VQJQ7c",
+    "commands": {
+        "create_voting": {
+            "syntax": "voting create `[name of the voting: string]` `[allow only attachments: true|false]`,`[public annoucement: true|false]`,`[time for voting: time in minutes]`,`[time before staarting the vote: time in minutes]`",
+        "example": "voting create `myVoting` `true`,`false`,`5`,`15`"
+        }
+    },
+    "description": "This server is hosting competition! Submit your entries in #entries-channel, vote other participants entries, and see who comes on the top being the winner!"
+
+    
 }
