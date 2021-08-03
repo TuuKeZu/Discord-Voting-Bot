@@ -137,7 +137,7 @@ function SetupVotingEvent(settings = votingSettings, message = Discord.Message) 
 
 
     VotingMessageEmbed
-        .setTitle(votingSettings.title)
+        .setTitle(ettings.title)
         .setDescription(Settings.description)
         .addField(`Estimated time remaining: ${NewFormattedTimeString}s`, "Make sure to subit your entries before the competition starts!");
 
@@ -183,9 +183,9 @@ function ServerUpdate() {
 
         if(!votingEvent.hasStarted){
 
-            votingEvent.timeUntilNextVote -= 5;
+            votingEvent.timeUntilStart -= 5;
 
-            if (votingEvent.timeUntilNextVote != 0 && votingEvent.timeUntilNextVote > 0) {
+            if (votingEvent.timeUntilStart != 0 && votingEvent.timeUntilStart > 0) {
                 UpdateStartTimer(votingEvent);
             }
             else {
@@ -194,10 +194,10 @@ function ServerUpdate() {
 
         }
         else{
-            votingEvent.votingTime -= 5;
-            console.log(votingEvent.votingTime);
+            votingEvent.timeUntilNextVote -= 5;
+            console.log(votingEvent.timeUntilNextVote);
 
-            if(votingEvent.votingTime != 0 && votingEvent.votingTime > 0){
+            if(votingEvent.timeUntilNextVote != 0 && votingEvent.timeUntilNextVote > 0){
                 
             }
             else{

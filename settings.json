@@ -1,5 +1,5 @@
 {
-    "token": "ODcxNDcyMjk1OTYzNjU2MjUz.YQbz0g.hWBWCL2ZJCsiU7geXchOfAZ8RI4",
+    "token": "ODcxNDcyMjk1OTYzNjU2MjUz.YQbz0g.uu2ynrdWXX3-ZEQu2n4xQVQnDBs",
     "commands": {
         "create_voting": {
             "syntax": "voting create `[name of the voting: string]` `[allow only attachments: true|false]`,`[public annoucement: true|false]`,`[time for voting: time in minutes]`,`[time before staarting the vote: time in minutes]`",
