@@ -38,8 +38,9 @@ class OnGoingVotingObject {
         this.entries = [];
         this.hasStarted = Boolean;
         this.settings = votingSettings;
-        this.VotesI = [];
-        this.votesII = [];
+        this.currentVotingmessage = Discord.Message;
+        this.EntryI = [];
+        this.EntryII = [];
     }
 }
 class EntryObject {
@@ -51,12 +52,11 @@ class EntryObject {
 }
 
 var CurrentVotings = [];
-var CurrentVotingMessages = [];
 var IsRunning = false;
 
 
-//?Syntax-check
-Client.on('message', (message) => {
+
+Client.on('message', (message) => { //?coammand-handeler
     
     if (message.channel.id == CommandChannel) {
         if (message.content.startsWith(prefix + 'voting')) {
@@ -118,10 +118,10 @@ Client.on('message', (message) => {
 });
 
 Client.on('messageReactionAdd', (reaction, user, message)=>{
-    //todo dont allow player to vote twice
+    
 });
 
-function SetupVotingEvent(settings = votingSettings, message = Discord.Message) {
+function SetupVotingEvent(settings = votingSettings, message = Discord.Message) { //?first setup; creates and starts the countdown for voting
     console.log("starting up the voting system...");
 
     let VotingMessageEmbed = new Discord.MessageEmbed();
@@ -165,7 +165,7 @@ function SetupVotingEvent(settings = votingSettings, message = Discord.Message) 
 }
 
 
-function StartUpdateTick() {
+function StartUpdateTick() { //?start the update-tick
     IsRunning = true;
 
     setInterval(() => {
@@ -173,7 +173,7 @@ function StartUpdateTick() {
     }, 5000);
 }
 
-function ServerUpdate() {
+function ServerUpdate() { //?global function that runs every 5000ms
 
     CurrentVotings.forEach(function (votingEvent, index) {
         if (votingEvent.message.deleted) {
@@ -209,7 +209,7 @@ function ServerUpdate() {
     });
 }
 
-function UpdateStartTimer(votingEvent = OnGoingVotingObject){
+function UpdateStartTimer(votingEvent = OnGoingVotingObject){ //?Update timer that indicates the time before the voting starts
     let oldEmbed = votingEvent.message.embeds[0];
     let newEmbed = new Discord.MessageEmbed();
     let minutes = parseInt(votingEvent.timeUntilStart / 60, 10);
@@ -228,7 +228,7 @@ function UpdateStartTimer(votingEvent = OnGoingVotingObject){
     votingEvent.message.edit(newEmbed);
 }
 
-function SetupVoting(votingEvent = OnGoingVotingObject){
+function SetupVoting(votingEvent = OnGoingVotingObject){ //?start the voting in #voting
     let oldEmbed = votingEvent.message.embeds[0];
     let newEmbed = new Discord.MessageEmbed();
 
@@ -298,10 +298,10 @@ function CreateVotingPair(votingEvent = OnGoingVotingObject){
         VotePair = pair;
     });
 
-    console.log(VotePair[0]);
-    console.log(VotePair[1]);
+    votingEvent.EntryI = VotePair[0];
+    votingEvent.EntryII = VotePair[1];
 
-    //?send the fentries
+    //?send the entries
 
     let FirstEntry = new Discord.MessageEmbed();
     let SecondEntry = new Discord.MessageEmbed();
@@ -324,10 +324,11 @@ function CreateVotingPair(votingEvent = OnGoingVotingObject){
                 .addField("Entry I", user1.username + " : 1️⃣")
                 .addField("Entry II", user1.username + " : 2️⃣");
 
-            Client.channels.cache.get(votingEvent.VotingChannel).send(FirstEntry).then(function(){
-                Client.channels.cache.get(votingEvent.VotingChannel).send(SecondEntry).then(function(){
-                    Client.channels.cache.get(votingEvent.VotingChannel).send(VotingObject).then(function(message){
-                        CurrentVotingMessages.push(message);
+            Client.channels.cache.get(votingEvent.VotingChannel).send(FirstEntry).then(function(){ //?sends the first entry
+                Client.channels.cache.get(votingEvent.VotingChannel).send(SecondEntry).then(function(){ //?sends the second entry
+                    Client.channels.cache.get(votingEvent.VotingChannel).send(VotingObject).then(function(message){ //?sends the votingMessage
+                        votingEvent.CurrentVotingMessage = message;
+
                         message.react("1️⃣");
                         message.react("2️⃣");
                     });
@@ -338,7 +339,24 @@ function CreateVotingPair(votingEvent = OnGoingVotingObject){
     });
 }
 
-function GetVotePair(array = [], callback){
+function DecideWinner(votingEvent = OnGoingVotingObject, callback){
+    let entries = votingEvent.entries;
+    let reactionList = votingEvent.currentVotingmessage.reactions.cache;
+    let VotesI = reactionList.get('1️⃣');
+    let VotesII = reactionList.get('2️⃣');
+
+    console.log(VotesI + " vs " + VotesII);
+
+    if(parseInt(VotesI) > parseInt(VotesII)){
+        //option 1 got more votes
+    }
+    else{
+        //option 2 got more votes
+    }
+
+}
+
+function GetVotePair(array = [], callback){ //?takes in array and selects two random items
     let result = [];
     let entries = array;
     let randomIndexOne = Math.floor(Math.random() * entries.length)
@@ -358,12 +376,12 @@ function GetVotePair(array = [], callback){
     return callback(result);
 }
 
-function RemoveVotingEvent(index) {
+function RemoveVotingEvent(index) { //?removes the VotingEvent from global update-tick
     CurrentVotings.splice(index, 1);
     console.log("removed votingEvent from the list");
 }
 
-function ReturnError(message = Discord.Message, errorType, argument, command) {
+function ReturnError(message = Discord.Message, errorType, argument, command) { //?error-handling
     /* Types:
         0. datal syntax error
         1. syntax error
