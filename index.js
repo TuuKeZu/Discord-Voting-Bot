@@ -6,7 +6,6 @@ const Settings = require('./settings.json');
 Client.once('ready', () => {
     console.log('ready!');
 
-
 });
 
 
@@ -19,33 +18,50 @@ const ManagerRoleID = '871669022532444160';
 const participantRoleID = '871668949459279882';
 var prefix = '!';
 
-const votingSettings = {
-    title: String,
-    allowAttachments: Boolean,
-    publicAnnoucement: Boolean,
-    votingTime: 0,
-    startOffset: 0
+class votingSettings{
+    constructor(){
+        this.title = String;
+        this.allowAttachments = Boolean;
+        this.publicAnnoucement = Boolean;
+        this.votingTime = 0;
+        this.startOffset = 0;
+    }   
 }
-const OnGoingVotingObject = {
-    votingName: "",
-    timeUntilStart: 0,
-    message: Discord.Message,
-    timeUntilNextVote: 0,
-    entries: [],
-    hasStarted: Boolean
+class OnGoingVotingObject {
+    constructor(){
+        this.votingName = "";
+        this.EntryChannel = '';
+        this.VotingChannel = '';
+        this.timeUntilStart = 0;
+        this.message = Discord.Message;
+        this.timeUntilNextVote = 0;
+        this.entries = [];
+        this.hasStarted = Boolean;
+        this.settings = votingSettings;
+        this.VotesI = [];
+        this.votesII = [];
+    }
+}
+class EntryObject {
+    constructor() {
+        this.authorID = '';
+        this.attachmentURL = '';
+        this.TextContent = '';
+    }
 }
 
 var CurrentVotings = [];
+var CurrentVotingMessages = [];
 var IsRunning = false;
+
 
 //?Syntax-check
 Client.on('message', (message) => {
+    
     if (message.channel.id == CommandChannel) {
-
         if (message.content.startsWith(prefix + 'voting')) {
             let messageContentArray = message.content.trim().split(' ')[2].split(',');
-            let voting = votingSettings;
-
+            let voting = new votingSettings();
             switch (message.content.trim().split(' ')[1]) {
                 case "create":
 
@@ -59,12 +75,12 @@ Client.on('message', (message) => {
                                 voting.publicAnnoucement = Boolean(messageContentArray[1]); //?will the voting be annoucement
 
                                 if (messageContentArray[3] > 0) {
-                                    voting.votingTime = messageContentArray[2]*60; //?time between the votings
-                                    console.log(messageContentArray[3]*60);
+                                    voting.votingTime = messageContentArray[2] * 60; //?time between the votings
+                                    console.log(voting.votingTime * 60);
 
                                     if (messageContentArray[4] > 0) {
-                                        voting.startOffset = messageContentArray[3]*60; //?time before the voting starts
-                                        console.log(messageContentArray[4]*60);
+                                        voting.startOffset = messageContentArray[3] * 60; //?time before the voting starts
+                                        console.log(messageContentArray[4] * 60);
                                         SetupVotingEvent(voting, message);
                                     }
                                     else {
@@ -101,12 +117,16 @@ Client.on('message', (message) => {
     }
 });
 
+Client.on('messageReactionAdd', (reaction, user, message)=>{
+    //todo dont allow player to vote twice
+});
+
 function SetupVotingEvent(settings = votingSettings, message = Discord.Message) {
     console.log("starting up the voting system...");
 
     let VotingMessageEmbed = new Discord.MessageEmbed();
 
-    //?calculate the values for minutes/seconds and construct timer in format of {minutes:seconds}.
+
     let minutes = parseInt(settings.startOffset / 60, 10);
     let seconds = parseInt(settings.startOffset % 60, 10);
 
@@ -115,21 +135,25 @@ function SetupVotingEvent(settings = votingSettings, message = Discord.Message) 
 
     let NewFormattedTimeString = `${minutes}:${seconds}`;
 
-    //?create the embed message for voting event
+
     VotingMessageEmbed
         .setTitle(votingSettings.title)
         .setDescription(Settings.description)
         .addField(`Estimated time remaining: ${NewFormattedTimeString}s`, "Make sure to subit your entries before the competition starts!");
 
-    //?send that message and add the voting-event on the list. If the list's update tick is not active, set it to active
     message.channel.send(VotingMessageEmbed).then(messageObject => {
 
-        let VotingEvent = OnGoingVotingObject;
+        let VotingEvent = new OnGoingVotingObject();
 
         VotingEvent.timeUntilStart = settings.startOffset;
+        VotingEvent.timeUntilNextVote = settings.votingTime;
         VotingEvent.hasStarted = false;
         VotingEvent.entries = [];
         VotingEvent.message = messageObject;
+        VotingEvent.EntryChannel = EntryChannelID;
+        VotingEvent.VotingChannel = VotingChannelID;
+
+        VotingEvent.settings = settings;
 
         CurrentVotings.push(VotingEvent);
 
@@ -146,47 +170,195 @@ function StartUpdateTick() {
 
     setInterval(() => {
         ServerUpdate();
-    }, 10000);
+    }, 5000);
 }
 
 function ServerUpdate() {
-    //for each on going voting-event
+
     CurrentVotings.forEach(function (votingEvent, index) {
-        //if the voting-message has been deleted
-        if(votingEvent.message.deleted){
+        if (votingEvent.message.deleted) {
             RemoveVotingEvent(index);
             return;
         }
 
-        //timer for the function, which refreshes every 10s
-        votingEvent.timeUntilStart -= 10;
+        if(!votingEvent.hasStarted){
 
-        let oldEmbed = votingEvent.message.embeds[0];
-        let newEmbed = new Discord.MessageEmbed();
-        let minutes = parseInt(votingEvent.timeUntilStart / 60, 10);
-        let seconds = parseInt(votingEvent.timeUntilStart % 60, 10);
+            votingEvent.timeUntilNextVote -= 5;
 
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
+            if (votingEvent.timeUntilNextVote != 0 && votingEvent.timeUntilNextVote > 0) {
+                UpdateStartTimer(votingEvent);
+            }
+            else {
+                SetupVoting(votingEvent);
+            }
 
-        let NewFormattedTimeString = `${minutes}:${seconds}`;
-
-        //if the timer havent reached zero, set the message's timer-text to match the time before the voting starts
-        if (votingEvent.timeUntilStart != 0 && votingEvent.timeUntilStart > 0) {
-            newEmbed
-                .setTitle(oldEmbed.title)
-                .setDescription(oldEmbed.description)
-                .addField(`Estimated time remaining: ${NewFormattedTimeString}s`, "Make sure to subit your entries before the competition starts!");
-
-            votingEvent.message.edit(newEmbed);
         }
-        else {
+        else{
+            votingEvent.votingTime -= 5;
+            console.log(votingEvent.votingTime);
 
+            if(votingEvent.votingTime != 0 && votingEvent.votingTime > 0){
+                
+            }
+            else{
+                CreateVotingPair(votingEvent);
+                votingEvent.votingTime = votingEvent.settings.votingTime;
+            }
+            
         }
     });
 }
 
-function RemoveVotingEvent(index){
+function UpdateStartTimer(votingEvent = OnGoingVotingObject){
+    let oldEmbed = votingEvent.message.embeds[0];
+    let newEmbed = new Discord.MessageEmbed();
+    let minutes = parseInt(votingEvent.timeUntilStart / 60, 10);
+    let seconds = parseInt(votingEvent.timeUntilStart % 60, 10);
+
+    minutes = minutes < 10 ? "0" + minutes : minutes;
+    seconds = seconds < 10 ? "0" + seconds : seconds;
+
+    let NewFormattedTimeString = `${minutes}:${seconds}`;
+
+    newEmbed
+        .setTitle(oldEmbed.title)
+        .setDescription(oldEmbed.description)
+        .addField(`Estimated time remaining: ${NewFormattedTimeString}s`, "Make sure to subit your entries before the competition starts!");
+
+    votingEvent.message.edit(newEmbed);
+}
+
+function SetupVoting(votingEvent = OnGoingVotingObject){
+    let oldEmbed = votingEvent.message.embeds[0];
+    let newEmbed = new Discord.MessageEmbed();
+
+    newEmbed
+        .setTitle(oldEmbed.title)
+        .setDescription(oldEmbed.description)
+        .addField(`Voting has started`, "Voting is starting...");
+
+    votingEvent.message.edit(newEmbed);
+    
+    votingEvent.hasStarted = true;
+
+    let Entrychannel = Client.channels.cache.get(EntryChannelID);
+    let allowAttachments = votingEvent.settings.allowAttachments;
+    let EntryCount = 0;
+
+    Entrychannel.messages.fetch({ limit: 99 }).then(messages => {
+        console.log("Message cache completed : " + messages.size + " entries were found");
+
+        messages.forEach(message => {
+
+            let messageAttachments = message.attachments;
+
+            if (allowAttachments) {
+
+                if (messageAttachments.array()[0] != null) {
+
+                    let entry = new EntryObject();
+
+                    entry.authorID = message.author.id;
+                    entry.attachmentURL = messageAttachments.array()[0].url;
+
+                    if (message.content != null) {
+                        entry.TextContent = message.content;
+                    }
+
+                    votingEvent.entries.push(entry);
+
+                    EntryCount++;
+
+                }
+
+            }
+            else {
+                if (messageAttachments.array()[0] == null) {
+
+                    if (message.content != null) {
+                        let entry = new EntryObject();
+
+                        entry.authorID = message.author.id;
+                        entry.TextContent = message.content;
+                    }
+
+                    EntryCount++;
+                }
+            }
+        })
+
+        CreateVotingPair(votingEvent);
+    });
+}
+
+function CreateVotingPair(votingEvent = OnGoingVotingObject){
+    let VotePair = [];
+
+    GetVotePair(votingEvent.entries, (pair) =>{
+        VotePair = pair;
+    });
+
+    console.log(VotePair[0]);
+    console.log(VotePair[1]);
+
+    //?send the fentries
+
+    let FirstEntry = new Discord.MessageEmbed();
+    let SecondEntry = new Discord.MessageEmbed();
+    let VotingObject = new Discord.MessageEmbed();
+
+    Client.users.fetch(VotePair[0].authorID).then((user1)=>{
+        Client.users.fetch(VotePair[0].authorID).then((user2)=>{
+
+            FirstEntry
+                .setImage(VotePair[0].attachmentURL)
+                .addField(VotePair[0].TextContent, "By "+user1.username)
+                .setTitle("Entry I");
+            SecondEntry
+                .setImage(VotePair[1].attachmentURL)
+                .addField(VotePair[0].TextContent, "By "+user2.username)
+                .setTitle("Entry II");
+            
+            VotingObject
+                .setTitle("Which one is better?")
+                .addField("Entry I", user1.username + " : 1️⃣")
+                .addField("Entry II", user1.username + " : 2️⃣");
+
+            Client.channels.cache.get(votingEvent.VotingChannel).send(FirstEntry).then(function(){
+                Client.channels.cache.get(votingEvent.VotingChannel).send(SecondEntry).then(function(){
+                    Client.channels.cache.get(votingEvent.VotingChannel).send(VotingObject).then(function(message){
+                        CurrentVotingMessages.push(message);
+                        message.react("1️⃣");
+                        message.react("2️⃣");
+                    });
+                });
+            });
+            
+        });
+    });
+}
+
+function GetVotePair(array = [], callback){
+    let result = [];
+    let entries = array;
+    let randomIndexOne = Math.floor(Math.random() * entries.length)
+
+    console.log(randomIndexOne + " from lenght of " + entries.length)
+
+    result[0] = entries[randomIndexOne];
+    entries.splice(randomIndexOne, 1);
+
+    let randomIndexTwo = Math.floor(Math.random() * entries.length)
+
+    console.log(randomIndexTwo + " from lenght of " + entries.length)
+
+    result[1] = entries[randomIndexTwo];
+    entries.splice(randomIndexTwo, 1);
+
+    return callback(result);
+}
+
+function RemoveVotingEvent(index) {
     CurrentVotings.splice(index, 1);
     console.log("removed votingEvent from the list");
 }
