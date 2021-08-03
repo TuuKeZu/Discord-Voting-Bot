@@ -75,8 +75,8 @@ Client.on('message', (message) => {
                                 voting.publicAnnoucement = Boolean(messageContentArray[1]); //?will the voting be annoucement
 
                                 if (messageContentArray[3] > 0) {
-                                    voting.votingTime = messageContentArray[2] * 60; //?time between the votings
-                                    console.log(voting.votingTime * 60);
+                                    voting.votingTime = messageContentArray[3] * 60; //?time between the votings
+                                    console.log(voting.votingTime);
 
                                     if (messageContentArray[4] > 0) {
                                         voting.startOffset = messageContentArray[3] * 60; //?time before the voting starts
@@ -137,7 +137,7 @@ function SetupVotingEvent(settings = votingSettings, message = Discord.Message) 
 
 
     VotingMessageEmbed
-        .setTitle(ettings.title)
+        .setTitle(settings.title)
         .setDescription(Settings.description)
         .addField(`Estimated time remaining: ${NewFormattedTimeString}s`, "Make sure to subit your entries before the competition starts!");
 
